@@ -8,11 +8,11 @@ import numpy as np
 @lru_cache(maxsize=1)
 def get_ocr_engine():
     """Load OCR once and reuse it during the app session."""
-    return PaddleOCR(
-        use_angle_cls=True,
-        lang="en",
-        show_log=False
-    )
+return PaddleOCR(
+    use_angle_cls=False,
+    lang="en",
+    show_log=False
+)
 
 
 def extract_text(image: Image.Image) -> dict:
