@@ -1,59 +1,58 @@
 
-from functools import lru_cache
+import base64
+import io
+import os
 
-import numpy as np
+from groq import Groq
 from PIL import Image
-from paddleocr import PaddleOCR
-
-
-@lru_cache(maxsize=1)
-def get_ocr_engine():
-    return PaddleOCR(
-        use_angle_cls=False,
-        lang="en",
-        show_log=False
-    )
 
 
 def extract_text(image: Image.Image) -> dict:
-    image_array = np.array(image.convert("RGB"))
-    engine = get_ocr_engine()
+    api_key = os.getenv("GROQ_API_KEY")
 
-    result = engine.ocr(image_array, cls=False)
+    if not api_key:
+        raise ValueError("GROQ_API_KEY is missing from Streamlit Secrets.")
 
-    lines = []
-    scores = []
+    buffer = io.BytesIO()
+    image.convert("RGB").save(buffer, format="JPEG")
+    encoded = base64.b64encode(buffer.getvalue()).decode("utf-8")
 
-    if result and result[0]:
-        for item in result[0]:
-            text = item[1][0]
-            confidence = float(item[1][1])
-            lines.append(text)
-            scores.append(confidence)
+    client = Groq(api_key=api_key)
 
-    extracted_text = "\n".join(lines)
+    response = client.chat.completions.create(
+        model="qwen/qwen3.8-27b",
+        messages=[
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": (
+                            "Extract all visible text from this package image. "
+                            "Preserve wording, numbers, and units. Mark unreadable "
+                            "words as [uncertain]. Never guess missing text."
+                        ),
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/jpeg;base64,{encoded}"
+                        },
+                    },
+                ],
+            }
+        ],
+        temperature=0,
+        max_completion_tokens=2048,
+    )
 
-    if not extracted_text.strip():
-        return {
-            "text": "",
-            "average_confidence": 0.0,
-            "warning": (
-                "No readable text detected. "
-                "Try a clearer, upright image."
-            )
-        }
-
-    average_confidence = sum(scores) / len(scores)
-
-    warning = None
-    if average_confidence < 0.70:
-        warning = (
-            "Some text may be inaccurate. "
-            "Check the original package."
-        )
+    text = response.choices[0].message.content or ""
 
     return {
-        "text": extracted_text,
-        "average_confidence": round(average_confidence, 2),
-        "warning": warning
+        "text": text.strip(),
+        "average_confidence": None,
+        "warning": (
+            "AI-extracted text may contain errors. "
+            "Verify important details against the original package."
+        ),
     }
