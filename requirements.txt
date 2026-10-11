@@ -1,1 +1,8 @@
 
+streamlit
+crewai
+groq
+paddleocr==2.7.3
+paddlepaddle==2.6.2
+Pillow
+opencv-python-headless
