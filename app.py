@@ -101,6 +101,84 @@ accent = "#60A5FA" if high_contrast else "#315EFB"
 st.markdown(
     f"""
     <style>
+    
+/* Global readable text */
+.stApp,
+.stApp p,
+.stApp label,
+.stApp li,
+.stApp h1,
+.stApp h2,
+.stApp h3,
+.stApp span,
+.stApp [data-testid="stMarkdownContainer"] {
+    color: var(--ll-text) !important;
+}
+
+/* Streamlit theme variables */
+:root {
+    --ll-text: #172033;
+    --ll-panel: #FFFFFF;
+    --ll-border: #D1D9E6;
+}
+
+.stApp {
+    color: var(--ll-text);
+}
+
+[data-testid="stAppViewContainer"],
+[data-testid="stMain"] {
+    background-color: #F5F7FB;
+}
+
+[data-testid="stSidebar"] {
+    background-color: #FFFFFF;
+}
+
+[data-testid="stVerticalBlockBorderWrapper"],
+[data-testid="stFileUploader"],
+[data-testid="stAlert"] {
+    border-color: #D1D9E6 !important;
+}
+
+/* Input fields */
+.stApp input,
+.stApp textarea,
+.stApp [data-baseweb="select"] > div {
+    background-color: #FFFFFF !important;
+    color: #172033 !important;
+    border-color: #B8C3D4 !important;
+}
+
+/* Tabs */
+.stTabs [role="tab"] {
+    color: #344054 !important;
+}
+
+.stTabs [role="tab"][aria-selected="true"] {
+    color: #2448C7 !important;
+    border-bottom-color: #315EFB !important;
+}
+
+/* Secondary buttons */
+.stApp div.stButton > button[kind="secondary"],
+.stApp div.stDownloadButton > button {
+    background-color: #FFFFFF !important;
+    color: #172033 !important;
+    border: 1px solid #B8C3D4 !important;
+}
+
+/* Primary action button */
+.stApp div.stButton > button[kind="primary"] {
+    background-color: #315EFB !important;
+    color: #FFFFFF !important;
+}
+
+/* Alerts: keep text readable */
+.stAlert p,
+.stAlert span {
+    color: #172033 !important;
+}
     .stApp {{
         background: {background};
         color: {foreground};
