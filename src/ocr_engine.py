@@ -43,7 +43,7 @@ def extract_text(image: Image.Image) -> dict:
             }
         ],
         temperature=0,
-        max_completion_tokens=2048,
+        max_completion_tokens=700,
     )
 
     text = response.choices[0].message.content or ""
