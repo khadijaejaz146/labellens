@@ -57,19 +57,21 @@ with st.sidebar:
     )
 
     high_contrast = st.toggle(
-        "High-contrast reading",
+        "High-contrast dark mode",
         value=False,
     )
 
     st.divider()
 
     st.markdown("### Session")
-
     st.write(
         f"Saved session notes: {len(st.session_state.label_memory)}"
     )
 
-    if st.button("Clear session data", use_container_width=True):
+    if st.button(
+        "Clear session data",
+        use_container_width=True,
+    ):
         st.session_state.label_memory = []
         st.session_state.last_report = ""
         st.session_state.last_ocr_text = ""
@@ -88,109 +90,60 @@ with st.sidebar:
 
 
 # --------------------------------------------------
-# CUSTOM DESIGN
+# THEME COLORS
 # --------------------------------------------------
 
-background = "#111827" if high_contrast else "#F5F7FB"
-foreground = "#FFFFFF" if high_contrast else "#172033"
-panel = "#1F2937" if high_contrast else "#FFFFFF"
-muted = "#D1D5DB" if high_contrast else "#667085"
-border = "#4B5563" if high_contrast else "#E5EAF2"
-accent = "#60A5FA" if high_contrast else "#315EFB"
+if high_contrast:
+    background = "#10141D"
+    foreground = "#F9FAFB"
+    panel = "#1B2332"
+    muted = "#D1D9E6"
+    border = "#596579"
+    accent = "#7DB4FF"
+    input_background = "#111827"
+    button_text = "#10141D"
+    secondary_background = "#253147"
+else:
+    background = "#F4F7FC"
+    foreground = "#172033"
+    panel = "#FFFFFF"
+    muted = "#475467"
+    border = "#D3DCE9"
+    accent = "#2855D9"
+    input_background = "#FFFFFF"
+    button_text = "#FFFFFF"
+    secondary_background = "#FFFFFF"
+
+
+# --------------------------------------------------
+# CUSTOM DESIGN AND ACCESSIBLE CSS
+# --------------------------------------------------
 
 st.markdown(
     f"""
     <style>
-    
-/* Global readable text */
-.stApp,
-.stApp p,
-.stApp label,
-.stApp li,
-.stApp h1,
-.stApp h2,
-.stApp h3,
-.stApp span,
-.stApp [data-testid="stMarkdownContainer"] {
-    color: var(--ll-text) !important;
-}
+    :root {{
+        color-scheme: {"dark" if high_contrast else "light"};
+    }}
 
-/* Streamlit theme variables */
-:root {
-    --ll-text: #172033;
-    --ll-panel: #FFFFFF;
-    --ll-border: #D1D9E6;
-}
-
-.stApp {
-    color: var(--ll-text);
-}
-
-[data-testid="stAppViewContainer"],
-[data-testid="stMain"] {
-    background-color: #F5F7FB;
-}
-
-[data-testid="stSidebar"] {
-    background-color: #FFFFFF;
-}
-
-[data-testid="stVerticalBlockBorderWrapper"],
-[data-testid="stFileUploader"],
-[data-testid="stAlert"] {
-    border-color: #D1D9E6 !important;
-}
-
-/* Input fields */
-.stApp input,
-.stApp textarea,
-.stApp [data-baseweb="select"] > div {
-    background-color: #FFFFFF !important;
-    color: #172033 !important;
-    border-color: #B8C3D4 !important;
-}
-
-/* Tabs */
-.stTabs [role="tab"] {
-    color: #344054 !important;
-}
-
-.stTabs [role="tab"][aria-selected="true"] {
-    color: #2448C7 !important;
-    border-bottom-color: #315EFB !important;
-}
-
-/* Secondary buttons */
-.stApp div.stButton > button[kind="secondary"],
-.stApp div.stDownloadButton > button {
-    background-color: #FFFFFF !important;
-    color: #172033 !important;
-    border: 1px solid #B8C3D4 !important;
-}
-
-/* Primary action button */
-.stApp div.stButton > button[kind="primary"] {
-    background-color: #315EFB !important;
-    color: #FFFFFF !important;
-}
-
-/* Alerts: keep text readable */
-.stAlert p,
-.stAlert span {
-    color: #172033 !important;
-}
-    .stApp {{
-        background: {background};
-        color: {foreground};
+    .stApp,
+    [data-testid="stAppViewContainer"],
+    [data-testid="stMain"] {{
+        background-color: {background} !important;
+        color: {foreground} !important;
     }}
 
     [data-testid="stHeader"] {{
-        background: transparent;
+        background-color: {background} !important;
     }}
 
     [data-testid="stSidebar"] {{
-        background: {panel};
+        background-color: {panel} !important;
         border-right: 1px solid {border};
+    }}
+
+    [data-testid="stSidebar"] > div {{
+        background-color: {panel} !important;
     }}
 
     .block-container {{
@@ -199,16 +152,35 @@ st.markdown(
         padding-bottom: 3rem;
     }}
 
+    /* General text */
+    .stApp p,
+    .stApp li,
+    .stApp label,
+    .stApp h1,
+    .stApp h2,
+    .stApp h3,
+    .stApp h4,
+    .stApp [data-testid="stMarkdownContainer"],
+    .stApp [data-testid="stCaptionContainer"],
+    .stApp [data-testid="stWidgetLabel"] {{
+        color: {foreground};
+    }}
+
+    .stApp [data-testid="stCaptionContainer"] p {{
+        color: {muted} !important;
+    }}
+
+    /* Header panel */
     .hero {{
         padding: 1.8rem;
         border-radius: 18px;
-        background: {panel};
+        background-color: {panel};
         border: 1px solid {border};
         margin-bottom: 1.5rem;
     }}
 
-    .eyebrow {{
-        color: {accent};
+    .hero .eyebrow {{
+        color: {accent} !important;
         text-transform: uppercase;
         font-size: 0.78rem;
         letter-spacing: 1.5px;
@@ -216,51 +188,146 @@ st.markdown(
     }}
 
     .hero h1 {{
-        color: {foreground};
+        color: {foreground} !important;
         font-size: 2.5rem;
         line-height: 1.2;
         margin: 0.6rem 0;
     }}
 
     .hero p {{
-        color: {muted};
+        color: {muted} !important;
         font-size: 1.05rem;
         margin-bottom: 0;
     }}
 
-    div[data-testid="stVerticalBlockBorderWrapper"] {{
+    /* Cards and containers */
+    [data-testid="stVerticalBlockBorderWrapper"] {{
+        background-color: {panel} !important;
+        border: 1px solid {border} !important;
         border-radius: 14px;
-        border-color: {border};
     }}
 
-    div.stButton > button[kind="primary"] {{
-        background: {accent};
-        color: white;
-        border: none;
+    /* Text inputs, text areas and select boxes */
+    .stApp input,
+    .stApp textarea,
+    .stApp [data-baseweb="select"] > div {{
+        background-color: {input_background} !important;
+        color: {foreground} !important;
+        border-color: {border} !important;
+        -webkit-text-fill-color: {foreground} !important;
+    }}
+
+    .stApp input::placeholder,
+    .stApp textarea::placeholder {{
+        color: {muted} !important;
+        opacity: 1;
+    }}
+
+    /* Disabled text areas remain readable */
+    .stApp textarea:disabled {{
+        opacity: 1 !important;
+        -webkit-text-fill-color: {foreground} !important;
+    }}
+
+    /* Primary buttons */
+    .stApp div.stButton > button[kind="primary"] {{
+        background-color: {accent} !important;
+        color: {button_text} !important;
+        border: 1px solid {accent} !important;
         border-radius: 9px;
         min-height: 3rem;
         font-weight: 650;
     }}
 
-    div.stButton > button {{
+    /* Secondary and download buttons */
+    .stApp div.stButton > button,
+    .stApp div.stDownloadButton > button {{
+        background-color: {secondary_background} !important;
+        color: {foreground} !important;
+        border: 1px solid {border} !important;
         border-radius: 9px;
+        min-height: 2.5rem;
     }}
 
-    .section-label {{
-        color: {muted};
-        font-size: 0.85rem;
-        margin-bottom: 0.35rem;
+    .stApp div.stButton > button p,
+    .stApp div.stDownloadButton > button p {{
+        color: inherit !important;
     }}
 
-    textarea {{
-        font-size: {font_size}px !important;
-        line-height: 1.7 !important;
-        background-color: {panel} !important;
+    /* Tabs */
+    .stApp [data-testid="stTabs"] button {{
         color: {foreground} !important;
     }}
 
+    .stApp [data-testid="stTabs"] button[aria-selected="true"] {{
+        color: {accent} !important;
+        border-bottom-color: {accent} !important;
+    }}
+
+    /* File upload area */
     [data-testid="stFileUploader"] {{
+        background-color: {panel} !important;
         border-radius: 12px;
+    }}
+
+    [data-testid="stFileUploader"] section {{
+        background-color: {panel} !important;
+        border-color: {border} !important;
+    }}
+
+    [data-testid="stFileUploader"] button {{
+        background-color: {secondary_background} !important;
+        color: {foreground} !important;
+        border-color: {border} !important;
+    }}
+
+    /* Alerts and status messages */
+    [data-testid="stAlert"] {{
+        background-color: {panel} !important;
+        border: 1px solid {border} !important;
+        color: {foreground} !important;
+    }}
+
+    [data-testid="stAlert"] p,
+    [data-testid="stAlert"] span {{
+        color: {foreground} !important;
+    }}
+
+    [data-testid="stStatusWidget"] {{
+        background-color: {panel} !important;
+        border-color: {border} !important;
+        color: {foreground} !important;
+    }}
+
+    /* Slider and toggle labels */
+    .stApp [data-testid="stSlider"] *,
+    .stApp [data-testid="stToggle"] {{
+        color: {foreground};
+    }}
+
+    /* Separators */
+    .stApp hr {{
+        border-color: {border} !important;
+    }}
+
+    /* Accessible text sizing */
+    .stApp p,
+    .stApp li,
+    .stApp [data-testid="stMarkdownContainer"] {{
+        font-size: max(1rem, {font_size}px);
+        line-height: 1.65;
+    }}
+
+    .stApp [data-testid="stCaptionContainer"] p {{
+        font-size: max(0.85rem, {font_size - 4}px);
+    }}
+
+    /* Keyboard focus */
+    .stApp button:focus-visible,
+    .stApp input:focus-visible,
+    .stApp textarea:focus-visible {{
+        outline: 3px solid {accent} !important;
+        outline-offset: 2px !important;
     }}
     </style>
     """,
@@ -287,6 +354,7 @@ st.markdown(
 )
 
 st.markdown("## Scan a package")
+
 st.write(
     "Upload a clear photo of a household product or medicine label "
     "to get started."
@@ -294,10 +362,12 @@ st.write(
 
 
 # --------------------------------------------------
-# IMAGE UPLOAD
+# IMAGE UPLOAD AND PREVIEW
 # --------------------------------------------------
 
 upload_col, preview_col = st.columns([1, 1], gap="large")
+
+image = None
 
 with upload_col:
     with st.container(border=True):
@@ -319,8 +389,6 @@ with preview_col:
     with st.container(border=True):
         st.markdown("### 2. Image preview")
 
-        image = None
-
         if uploaded_file is not None:
             try:
                 image = Image.open(
@@ -329,7 +397,7 @@ with preview_col:
 
                 st.image(
                     image,
-                    use_container_width=True,
+                    width="stretch",
                 )
 
                 st.caption(
@@ -358,8 +426,6 @@ if uploaded_file is not None and image is not None:
         st.session_state.last_warning = ""
         st.session_state.last_confidence = None
 
-    st.write("")
-
     if st.button(
         "Extract and analyze label",
         type="primary",
@@ -373,11 +439,8 @@ if uploaded_file is not None and image is not None:
                 st.write("Reading text from the image...")
 
                 ocr_result = extract_text(image)
-
                 extracted_text = ocr_result.get("text", "")
-                confidence = ocr_result.get(
-                    "average_confidence"
-                )
+                confidence = ocr_result.get("average_confidence")
                 warning = ocr_result.get("warning") or ""
 
                 if not extracted_text.strip():
@@ -414,11 +477,11 @@ if uploaded_file is not None and image is not None:
                     expanded=False,
                 )
 
-        except Exception:
+        except Exception as exc:
             st.error(
-                "Analysis failed. Check your Streamlit logs for the "
-                "technical error and verify your Groq secret."
+                "Analysis failed. Please check the app logs for details."
             )
+            st.caption(f"Technical detail: {type(exc).__name__}: {exc}")
 
     if st.session_state.last_warning:
         st.warning(st.session_state.last_warning)
@@ -496,7 +559,7 @@ if st.session_state.last_ocr_text:
         st.image(
             image,
             caption="Original uploaded package image",
-            use_container_width=True,
+            width="stretch",
         )
 
     st.divider()
