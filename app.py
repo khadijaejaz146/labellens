@@ -1,155 +1,465 @@
 
-import os
 import streamlit as st
+from PIL import Image
+from io import BytesIO
 
 from src.ocr_engine import extract_text
 from src.crew_setup import analyze_label
 
 
+# --------------------------------------------------
+# PAGE CONFIGURATION
+# --------------------------------------------------
+
 st.set_page_config(
-    page_title="LabelLens",
+    page_title="LabelLens | Accessible Packaging",
     page_icon=None,
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded",
 )
 
-st.title("LabelLens")
-st.subheader("Packaging Accessibility Assistant")
 
-st.write(
-    "Upload a packaging photo to extract, organize, and listen to "
-    "visible text. Always check important information against the "
-    "original package."
-)
+# --------------------------------------------------
+# SESSION STATE
+# --------------------------------------------------
 
-# Session memory belongs to this user's current app session.
-if "label_memory" not in st.session_state:
-    st.session_state.label_memory = []
+defaults = {
+    "label_memory": [],
+    "last_report": "",
+    "last_ocr_text": "",
+    "last_warning": "",
+    "last_confidence": None,
+    "last_image_id": "",
+}
 
-if "last_report" not in st.session_state:
-    st.session_state.last_report = None
+for key, value in defaults.items():
+    if key not in st.session_state:
+        st.session_state[key] = value
 
-if "last_ocr_text" not in st.session_state:
-    st.session_state.last_ocr_text = ""
 
-uploaded_file = st.file_uploader(
-    "Upload a package image",
-    type=["png", "jpg", "jpeg"]
-)
+# --------------------------------------------------
+# ACCESSIBILITY SETTINGS
+# --------------------------------------------------
 
-if uploaded_file:
-    from PIL import Image
-
-    image = Image.open(uploaded_file).convert("RGB")
-
-    left, right = st.columns(2)
-
-    with left:
-        st.image(image, caption="Original package image", use_container_width=True)
-
-    with right:
-        st.write("Image details")
-        st.write(f"Image size: {image.width} × {image.height}")
-
-    if st.button("Extract and analyze label", type="primary"):
-        try:
-            with st.spinner("Extracting text with OCR..."):
-                ocr_result = extract_text(image)
-
-            extracted_text = ocr_result["text"]
-            confidence = ocr_result["average_confidence"]
-
-            st.session_state.last_ocr_text = extracted_text
-            st.session_state.last_report = None
-
-            if not extracted_text.strip():
-                st.error(
-                    "No readable text was detected. Try a clearer, "
-                    "well-lit image."
-                )
-            else:
-                st.success("Text extraction finished.")
-
-                if ocr_result["warning"]:
-                    st.warning(ocr_result["warning"])
-
-                st.write(f"OCR confidence estimate: {confidence:.0%}")
-
-                with st.spinner("CrewAI is organizing and reviewing the text..."):
-                    report = analyze_label(
-                        extracted_text=extracted_text,
-                        confidence=confidence,
-                        memory_store=st.session_state.label_memory
-                    )
-
-                st.session_state.last_report = report
-
-                # Save only a short, non-sensitive session note.
-                st.session_state.label_memory.append(
-                    f"Last analysis: {len(extracted_text)} characters extracted. "
-                    f"Average OCR confidence: {confidence:.0%}."
-                )
-                st.session_state.label_memory = (
-                    st.session_state.label_memory[-10:]
-                )
-
-        except Exception as error:
-            st.error(
-                "The analysis failed. Check the app logs and verify "
-                "that the API key and dependencies are configured."
-            )
-            st.caption(f"Technical details: {error}")
-
-if st.session_state.last_ocr_text:
+with st.sidebar:
+    st.markdown("## LabelLens")
+    st.caption("Packaging accessibility assistant")
     st.divider()
-    st.header("Original extracted text")
 
-    st.text_area(
-        "OCR result — check this against the image",
-        value=st.session_state.last_ocr_text,
-        height=220
+    st.markdown("### Reading preferences")
+
+    font_size = st.slider(
+        "Text size",
+        min_value=16,
+        max_value=32,
+        value=20,
+        step=2,
     )
 
-if st.session_state.last_report:
-    st.divider()
-    st.header("Organized label report")
-    st.markdown(st.session_state.last_report)
-
-    st.download_button(
-        "Download report",
-        data=st.session_state.last_report,
-        file_name="labellens_report.txt",
-        mime="text/plain"
+    high_contrast = st.toggle(
+        "High-contrast reading",
+        value=False,
     )
+
+    st.divider()
+
+    st.markdown("### Session")
+
+    st.write(
+        f"Saved session notes: {len(st.session_state.label_memory)}"
+    )
+
+    if st.button("Clear session data", use_container_width=True):
+        st.session_state.label_memory = []
+        st.session_state.last_report = ""
+        st.session_state.last_ocr_text = ""
+        st.session_state.last_warning = ""
+        st.session_state.last_confidence = None
+        st.session_state.last_image_id = ""
+        st.rerun()
+
+    st.divider()
 
     st.caption(
-        "AI-organized content can contain errors. Verify all important "
-        "details against the original package."
+        "Privacy: avoid uploading images containing personal "
+        "information. Uploaded images are sent to the configured "
+        "AI provider for analysis."
     )
 
-st.divider()
-st.subheader("Accessibility settings")
 
-font_size = st.slider(
-    "Reading text size",
-    min_value=16,
-    max_value=32,
-    value=20
+# --------------------------------------------------
+# CUSTOM DESIGN
+# --------------------------------------------------
+
+background = "#111827" if high_contrast else "#F5F7FB"
+foreground = "#FFFFFF" if high_contrast else "#172033"
+panel = "#1F2937" if high_contrast else "#FFFFFF"
+muted = "#D1D5DB" if high_contrast else "#667085"
+border = "#4B5563" if high_contrast else "#E5EAF2"
+accent = "#60A5FA" if high_contrast else "#315EFB"
+
+st.markdown(
+    f"""
+    <style>
+    .stApp {{
+        background: {background};
+        color: {foreground};
+    }}
+
+    [data-testid="stHeader"] {{
+        background: transparent;
+    }}
+
+    [data-testid="stSidebar"] {{
+        background: {panel};
+        border-right: 1px solid {border};
+    }}
+
+    .block-container {{
+        max-width: 1250px;
+        padding-top: 2rem;
+        padding-bottom: 3rem;
+    }}
+
+    .hero {{
+        padding: 1.8rem;
+        border-radius: 18px;
+        background: {panel};
+        border: 1px solid {border};
+        margin-bottom: 1.5rem;
+    }}
+
+    .eyebrow {{
+        color: {accent};
+        text-transform: uppercase;
+        font-size: 0.78rem;
+        letter-spacing: 1.5px;
+        font-weight: 700;
+    }}
+
+    .hero h1 {{
+        color: {foreground};
+        font-size: 2.5rem;
+        line-height: 1.2;
+        margin: 0.6rem 0;
+    }}
+
+    .hero p {{
+        color: {muted};
+        font-size: 1.05rem;
+        margin-bottom: 0;
+    }}
+
+    div[data-testid="stVerticalBlockBorderWrapper"] {{
+        border-radius: 14px;
+        border-color: {border};
+    }}
+
+    div.stButton > button[kind="primary"] {{
+        background: {accent};
+        color: white;
+        border: none;
+        border-radius: 9px;
+        min-height: 3rem;
+        font-weight: 650;
+    }}
+
+    div.stButton > button {{
+        border-radius: 9px;
+    }}
+
+    .section-label {{
+        color: {muted};
+        font-size: 0.85rem;
+        margin-bottom: 0.35rem;
+    }}
+
+    textarea {{
+        font-size: {font_size}px !important;
+        line-height: 1.7 !important;
+        background-color: {panel} !important;
+        color: {foreground} !important;
+    }}
+
+    [data-testid="stFileUploader"] {{
+        border-radius: 12px;
+    }}
+    </style>
+    """,
+    unsafe_allow_html=True,
 )
+
+
+# --------------------------------------------------
+# HEADER
+# --------------------------------------------------
+
+st.markdown(
+    """
+    <div class="hero">
+        <div class="eyebrow">Accessible technology</div>
+        <h1>Read every label with confidence.</h1>
+        <p>
+            Turn packaging photos into readable, organized text.
+            Review uncertain information before relying on it.
+        </p>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+st.markdown("## Scan a package")
+st.write(
+    "Upload a clear photo of a household product or medicine label "
+    "to get started."
+)
+
+
+# --------------------------------------------------
+# IMAGE UPLOAD
+# --------------------------------------------------
+
+upload_col, preview_col = st.columns([1, 1], gap="large")
+
+with upload_col:
+    with st.container(border=True):
+        st.markdown("### 1. Upload image")
+
+        uploaded_file = st.file_uploader(
+            "Choose a label photo",
+            type=["png", "jpg", "jpeg"],
+            help="Use a clear, well-lit, upright image.",
+            label_visibility="visible",
+        )
+
+        st.caption(
+            "Supported formats: PNG and JPEG. "
+            "Avoid glare, blur, and cropped text."
+        )
+
+with preview_col:
+    with st.container(border=True):
+        st.markdown("### 2. Image preview")
+
+        image = None
+
+        if uploaded_file is not None:
+            try:
+                image = Image.open(
+                    BytesIO(uploaded_file.getvalue())
+                ).convert("RGB")
+
+                st.image(
+                    image,
+                    use_container_width=True,
+                )
+
+                st.caption(
+                    f"Image dimensions: {image.width} × {image.height}"
+                )
+
+            except Exception:
+                st.error("This image could not be opened.")
+        else:
+            st.info(
+                "Your package preview will appear here after you upload "
+                "an image."
+            )
+
+
+# --------------------------------------------------
+# ANALYSIS
+# --------------------------------------------------
+
+if uploaded_file is not None and image is not None:
+    image_id = uploaded_file.getvalue().hex()[:100]
+
+    if image_id != st.session_state.last_image_id:
+        st.session_state.last_report = ""
+        st.session_state.last_ocr_text = ""
+        st.session_state.last_warning = ""
+        st.session_state.last_confidence = None
+
+    st.write("")
+
+    if st.button(
+        "Extract and analyze label",
+        type="primary",
+        use_container_width=True,
+    ):
+        try:
+            with st.status(
+                "Analyzing your label...",
+                expanded=True,
+            ) as status:
+                st.write("Reading text from the image...")
+
+                ocr_result = extract_text(image)
+
+                extracted_text = ocr_result.get("text", "")
+                confidence = ocr_result.get(
+                    "average_confidence"
+                )
+                warning = ocr_result.get("warning") or ""
+
+                if not extracted_text.strip():
+                    status.update(
+                        label="No readable text found",
+                        state="error",
+                    )
+                    st.session_state.last_ocr_text = ""
+                    st.session_state.last_report = ""
+                    st.session_state.last_warning = (
+                        warning or "Try uploading a clearer image."
+                    )
+                    st.stop()
+
+                st.write("Organizing and reviewing extracted text...")
+
+                report = analyze_label(
+                    extracted_text=extracted_text,
+                    confidence=(
+                        confidence if confidence is not None else 0
+                    ),
+                    memory_store=st.session_state.label_memory,
+                )
+
+                st.session_state.last_ocr_text = extracted_text
+                st.session_state.last_report = report
+                st.session_state.last_warning = warning
+                st.session_state.last_confidence = confidence
+                st.session_state.last_image_id = image_id
+
+                status.update(
+                    label="Analysis complete",
+                    state="complete",
+                    expanded=False,
+                )
+
+        except Exception:
+            st.error(
+                "Analysis failed. Check your Streamlit logs for the "
+                "technical error and verify your Groq secret."
+            )
+
+    if st.session_state.last_warning:
+        st.warning(st.session_state.last_warning)
+
+
+# --------------------------------------------------
+# RESULTS
+# --------------------------------------------------
 
 if st.session_state.last_ocr_text:
-    st.markdown(
-        f'<div style="font-size:{font_size}px; line-height:1.7;">'
-        f'{st.session_state.last_ocr_text}</div>',
-        unsafe_allow_html=True
+    st.divider()
+    st.markdown("## Your label results")
+
+    text_tab, report_tab, image_tab = st.tabs(
+        [
+            "Extracted text",
+            "Organized report",
+            "Original image",
+        ]
     )
 
-st.caption(
-    "Read-aloud support can be added next. This first version focuses "
-    "on reliable extraction and accessible text."
-)
+    with text_tab:
+        st.markdown("### Extracted packaging text")
 
-if st.button("Clear session memory"):
-    st.session_state.label_memory = []
-    st.session_state.last_report = None
-    st.session_state.last_ocr_text = ""
-    st.rerun()
+        st.caption(
+            "This is the text returned by the image-reading model. "
+            "Check it against the original package."
+        )
+
+        st.text_area(
+            "Extracted text",
+            value=st.session_state.last_ocr_text,
+            height=350,
+            disabled=True,
+            label_visibility="collapsed",
+        )
+
+        if st.session_state.last_confidence is not None:
+            st.caption(
+                "OCR confidence estimate: "
+                f"{st.session_state.last_confidence:.0%}"
+            )
+        else:
+            st.caption("Extraction method: Groq vision AI")
+
+        st.download_button(
+            "Download extracted text",
+            data=st.session_state.last_ocr_text,
+            file_name="labellens_extracted_text.txt",
+            mime="text/plain",
+            use_container_width=True,
+        )
+
+    with report_tab:
+        st.markdown("### AI-organized label information")
+
+        st.warning(
+            "AI can misread numbers, ingredients, and warnings. "
+            "Verify important information against the original package."
+        )
+
+        st.markdown(st.session_state.last_report)
+
+        st.download_button(
+            "Download analysis report",
+            data=st.session_state.last_report,
+            file_name="labellens_report.txt",
+            mime="text/plain",
+            use_container_width=True,
+        )
+
+    with image_tab:
+        st.markdown("### Compare with original")
+
+        st.image(
+            image,
+            caption="Original uploaded package image",
+            use_container_width=True,
+        )
+
+    st.divider()
+    st.markdown("### Accessible reading view")
+
+    st.caption(
+        "Use this larger text view to make the extracted label easier "
+        "to read. It does not correct OCR mistakes."
+    )
+
+    st.text_area(
+        "Large text",
+        value=st.session_state.last_ocr_text,
+        height=300,
+        disabled=True,
+        label_visibility="collapsed",
+        key="accessible_reading_view",
+    )
+
+    st.download_button(
+        "Save complete report",
+        data=(
+            "LABELLENS — EXTRACTED TEXT\n\n"
+            + st.session_state.last_ocr_text
+            + "\n\nAI-ORGANIZED REPORT\n\n"
+            + st.session_state.last_report
+        ),
+        file_name="labellens_complete_report.txt",
+        mime="text/plain",
+        use_container_width=True,
+    )
+
+
+# --------------------------------------------------
+# FOOTER
+# --------------------------------------------------
+
+st.divider()
+
+st.caption(
+    "LabelLens is an accessibility assistant, not a medical or "
+    "product-safety authority. Always verify important details "
+    "against the original packaging."
+)
