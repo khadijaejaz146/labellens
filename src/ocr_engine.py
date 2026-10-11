@@ -21,7 +21,7 @@ def extract_text(image: Image.Image) -> dict:
     image_array = np.array(image.convert("RGB"))
     engine = get_ocr_engine()
 
-    result = engine.ocr(image_array, cls=True)
+    result = engine.ocr(image_array, cls=False)
 
     lines = []
     scores = []
